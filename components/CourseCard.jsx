@@ -2,11 +2,12 @@
 import Image from 'next/image'
 import Link from 'next/link'
 
-export default function CourseCard({ course }) {
+export default function CourseCard({ course , onPayment }) {
   // course: { id, title, description, price, img }
 // Function to handle Buy button click
 function handleBuyClick() {
     console.log(course.price);
+    onPayment(course.price, course.title);
 }
 
 return (

@@ -4,6 +4,7 @@ import Breadcrumb from "../../components/Breadcrumb"
 import Navbar from "../../components/Navbar"
 import CoursesGrid from "../../components/CoursesGrid"
 import { useEffect } from "react"
+import axios from "axios"
 
 export default function Page() {
   const courses = [
@@ -39,6 +40,50 @@ export default function Page() {
     })
   }
 
+  const onPayment = async (price , itemName)=>{
+    // create order
+    try{
+      const options = {
+        courseID : 1,
+        amount : price
+      } 
+      const res = await axios.post('http://localhost:4000/api/create-order',options);
+      const data = res.data;
+      console.log(data);
+      const order = data.order; 
+      const paymentOptions = new window.Razorpay({
+        key: process.env.RAZORPAY_KEY_ID, // Enter the Key ID generated from the Dashboard
+        amount: order.amount.toString(),
+        currency: order.currency,
+        name: "Vivek Verma",
+        description: itemName,
+        order_id: order.id,
+        handler: function (response) {
+          alert("Payment Successful");
+          console.log(response);
+          const options2 = {
+            order_id : response.razorpay_order_id,
+            payment_id : response.razorpay_payment_id,
+            signature : response.razorpay_signature
+          }
+          axios.post('http://localhost:4000/api/verify-payment',options2).then((res)=>{
+            console.log(res.data);
+            if(res.data.success){
+              alert("Payment Verified Successfully");
+            }else{
+              alert("Payment Verification Failed");
+            }
+          }).catch((err)=>{
+            console.error(err);
+          })
+        }
+      });
+      paymentOptions.open();
+    }catch(err){
+      console.log(err);
+    }
+  }
+
   useEffect(() => {
     loadScript("https://checkout.razorpay.com/v1/checkout.js")
   }, [])
@@ -48,7 +93,7 @@ export default function Page() {
       <div className="container mx-auto px-4 py-8">
         <Breadcrumb items={[{ label: 'Home', href: '/' }, { label: 'Courses' }]} />
         <h1 className="text-2xl font-bold mb-4">Courses</h1>
-        <CoursesGrid courses={courses} />
+        <CoursesGrid onPayment={onPayment} courses={courses} />
       </div>
     </main>
   )
